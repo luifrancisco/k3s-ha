@@ -1,0 +1,84 @@
+---
+- name: ping module 
+  hosts: all
+  become: false
+  tasks:
+    - name: test connection
+      ping:
+
+- name: update ubuntu packges
+  hosts: all
+  become: true
+  tasks:
+    - name: perform apt-get update
+      apt:
+        update_cache: yes
+
+    - name: install curl
+      apt:
+        name: curl
+        state: latest
+        install_recommends: no
+
+    - name: install wget
+      apt:
+        name: wget
+        state: latest
+        install_recommends: no
+
+- name: update  /etc/hosts 
+  hosts: all
+  become: true
+  tasks:      
+    - name: update with first vm ip information
+      lineinfile:
+        line: 10.20.0.90 k8s-master-0-dev
+        path: /etc/hosts
+        
+    - name: update with second vm ip information
+      lineinfile:
+        line: 10.20.0.91 k8s-master-1-dev
+        path: /etc/hosts
+
+
+- name: Create 'luis' user and group.
+  hosts: all
+  become: true
+  tasks:
+    - name: Create group.
+      ansible.builtin.group:
+        name: luis
+    - name: Create the user 'luis' with a bash shell, appending the group 'admin' to the user's groups
+      ansible.builtin.user:
+        name: luis
+        shell: /bin/bash
+        group: luis
+        groups: admin
+        append: yes
+        create_home: true
+    - name: Set up multiple authorized keys
+      ansible.posix.authorized_key:
+        user: luis
+        state: present
+        key: '{{ item }}'
+      with_file:
+        - authorized_keys/luis-daikanyama.pub
+        - authorized_keys/luis-popos.pub
+
+# - name: install k3s server - init
+#   hosts: k3s-init
+#   become: true
+#   tasks:
+#     - name: install k3s server init
+#       script: scripts/k3s-server-init.sh 
+#       args:
+#         creates: /var/lib/rancher
+
+# - name: install k3s server - members
+#   hosts: k3s-init
+#   become: true
+#   tasks:
+#     - name: install k3s server on members
+#       script: /some/local/create_file.sh --some-argument 1234
+#       args:
+#         creates: /var/lib/rancher

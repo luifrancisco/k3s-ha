@@ -33,8 +33,8 @@ variable "sshkeys" {
     type = string
 }
 
-resource "proxmox_vm_qemu" "k8s-master-1" {
-  name        = "k8s-master-1"
+resource "proxmox_vm_qemu" "k8s-master-0-dev" {
+  name        = "k8s-master-0-dev"
   target_node = "pve-dev"
   clone = "ubuntu-22-04-template"
   vmid = 1800
@@ -64,19 +64,11 @@ resource "proxmox_vm_qemu" "k8s-master-1" {
   }
 }
 
-# resource "proxmox_vm_qemu" "k8s-master" {
-#   disk {
-#     type = "scsi"
-#     storage = "local-lvm"
-# 	  size = "10G"
-# 	  iothread = 1
-#   }
-# }
 
 
-
-resource "proxmox_vm_qemu" "k8s-master-2" {
-  name        = "k8s-master-2"
+# Commenting below to test cicustom
+resource "proxmox_vm_qemu" "k8s-master-1-dev" {
+  name        = "k8s-master-1-dev"
   target_node = "pve-dev"
   clone = "ubuntu-22-04-template"
   vmid = 1801

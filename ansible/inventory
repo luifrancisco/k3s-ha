@@ -1,6 +1,0 @@
-all:
-  hosts:
-    10.20.0.90:
-    10.20.0.91:
-  vars:
-    ansible_user: ansible
