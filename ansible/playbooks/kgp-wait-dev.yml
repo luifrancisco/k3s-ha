@@ -1,0 +1,22 @@
+---
+# - name: Wait until pods are in 'running' or 'completed' state
+#   hosts: main
+#   become: true
+#   tasks:
+#     - name: Check pod status
+#       shell: kubectl get pod  -n kube-system -o json
+#       register: kgp_status
+#     - name: Print pod status
+#       debug:
+#         msg: "{{ kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique }}"
+
+- name: Wait until pods are in 'running' or 'completed' state
+  hosts: main
+  become: true
+  tasks:
+    - name: Check pod status
+      shell: kubectl get pod  -n kube-system -o json
+      register: kgp_status
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Succeeded"]
+      retries: 10
+      delay: 10

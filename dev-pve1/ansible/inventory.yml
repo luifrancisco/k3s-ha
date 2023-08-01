@@ -1,0 +1,11 @@
+all:
+  hosts:
+  children:
+    main:
+      hosts:
+        10.20.0.93:
+    members:
+      hosts:
+        10.20.0.94:
+  vars:
+    ansible_user: ansible

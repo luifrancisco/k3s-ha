@@ -1,0 +1,18 @@
+---
+- name: uninstall k3s server - main
+  hosts: all
+  become: true
+  tasks:
+    - name: uninstall k3s server on main
+      script: scripts/k3s-uninstall-ansible.sh 
+      args:
+        removes: /var/lib/rancher
+
+# - name: install k3s server - members
+#   hosts: k3s-init
+#   become: true
+#   tasks:
+#     - name: install k3s server on members
+#       script: /some/local/create_file.sh --some-argument 1234
+#       args:
+#         creates: /var/lib/rancher

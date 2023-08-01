@@ -1,0 +1,54 @@
+---
+# - name: install cilium on main
+#   hosts: main
+#   become: true
+#   tasks:
+#     - name: install cilium on main
+#       script: scripts/cilium-install.sh
+
+
+- name: install helm on main
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install helm cli using script
+      shell: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+
+
+      register: helm_install_main_logs
+    - name: print helm_install_main_logs
+      debug: 
+        msg: "{{ helm_install_main_logs.stdout_lines }}"
+    - name: print helm_install_main_logs errors
+      debug: 
+        msg: "{{ helm_install_main_logs.stderr_lines }}"
+
+        
+
+# - name: install helm-cli on mmembers
+#   hosts: members
+#   become: true 
+#   tasks:
+#     - name: install helm-cli only
+#       shell: |
+       
+
+#         export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+#       register: helm_install_member_logs
+#     - name: print helm_install_member_logs
+#       debug: 
+#         msg: "{{ helm_install_member_logs }}"
+
+- name: Query helm version
+  hosts: main
+  become: true
+  tasks:
+    - name: Query helm version
+      shell: helm version
+      register: helm_version
+    - name: Print helm version
+      debug:
+        msg: "{{ helm_version.stdout }}"

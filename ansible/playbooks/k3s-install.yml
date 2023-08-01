@@ -13,11 +13,14 @@
   become: true 
   tasks:
     - name: install k3s server join on main 
-      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --cluster-init --flannel-backend none --disable-network-policy
+      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --cluster-init --flannel-backend none --disable-network-policy --cluster-cidr=10.40.0.0/16 --disable=traefik
       register: main_init_logs
-    - name: print main_init_logs
+    - name: print main_init_logs output
       debug: 
-        msg: "{{ main_init_logs }}"
+        msg: "{{ main_init_logs.stdout_lines }}"
+    - name: print main_init_logs errors
+      debug: 
+        msg: "{{ main_init_logs.stderr_lines }}"
     - name: Check k3s service status
       systemd:
         name: k3s
@@ -41,11 +44,14 @@
   become: true 
   tasks:
     - name: install k3s server join on member 
-      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --server https://k8s-master-0-dev:6443 --flannel-backend none --disable-network-policy
+      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --server https://k8s-master-0-dev:6443 --flannel-backend none --disable-network-policy --cluster-cidr=10.40.0.0/16 --disable=traefik
       register: member_join_status
-    - name: print member_join_status
+    - name: print member_join_status output
       debug: 
-        msg: "{{ member_join_status }}"
+        msg: "{{ member_join_status.stdout_lines }}"
+    - name: print member_join_status errors
+      debug: 
+        msg: "{{ member_join_status.stderr_lines }}"
     - name: Check k3s service status
       systemd:
         name: k3s
