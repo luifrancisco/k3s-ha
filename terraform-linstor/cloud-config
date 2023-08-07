@@ -1,0 +1,23 @@
+ssh_pwauth: true
+
+users:
+- name: ansible
+  gecos: Ansible User
+  groups: users,admin,wheel
+  sudo: ALL=(ALL) NOPASSWD:ALL
+  shell: /bin/bash
+  lock_passwd: true
+  ssh_authorized_keys:
+    - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCl10+ukwS00zUDxzk2fBfqBeemZd93tgE+SLcVKniQc7N8oJEbAxlNx1nyqsHm/G5AmX4pp/NQwDgF4yRa+9ZmRLDf9Zk6kXehZ1CI2uaf4KbipNRkoBw952MtntbVSmfgNl>
+    - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvk0aNTYjlsMKbUyt734AtHUKWSCEsD8LgJbp2srIUMAp14hMPh7owRCmZsgqEWyB+b5fwEb3KdJykQSxYmLInB6qsd0e4GTmNHhXkg/KLQV1Nqyr084gefsPtdwPuoshgTi>
+- name: luis
+  gecos: Luis
+  groups: users,admin,wheel
+  sudo: ALL=(ALL) NOPASSWD:ALL
+  shell: /bin/bash
+  lock_passwd: false
+  ssh_authorized_keys:
+    - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCl10+ukwS00zUDxzk2fBfqBeemZd93tgE+SLcVKniQc7N8oJEbAxlNx1nyqsHm/G5AmX4pp/NQwDgF4yRa+9ZmRLDf9Zk6kXehZ1CI2uaf4KbipNRkoBw952MtntbVSmfgNl>
+    - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCvk0aNTYjlsMKbUyt734AtHUKWSCEsD8LgJbp2srIUMAp14hMPh7owRCmZsgqEWyB+b5fwEb3KdJykQSxYmLInB6qsd0e4GTmNHhXkg/KLQV1Nqyr084gefsPtdwPuoshgTi>
+
+

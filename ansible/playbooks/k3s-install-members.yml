@@ -1,0 +1,90 @@
+---
+- name: install k3s server - member  
+  hosts: members 
+  serial: 1
+  become: true 
+  tasks:
+    - name: install k3s server join on member 
+      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --server https://k8s-master-0-dev:6443 --flannel-backend none --disable-network-policy --cluster-cidr=10.40.0.0/16 --disable=traefik
+      register: member_join_status
+    - name: print member_join_status output
+      debug: 
+        msg: "{{ member_join_status.stdout_lines }}"
+    - name: print member_join_status errors
+      debug: 
+        msg: "{{ member_join_status.stderr_lines }}"
+    - name: Check k3s service status
+      systemd:
+        name: k3s
+      register: k3s_service_status
+    - name: print k3s service status
+      debug: 
+        msg: "{{ k3s_service_status.status.ActiveState }}"
+
+- name: Configure kube-config for 'luis' user
+  hosts: members
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/luis/.kube/
+        state: directory
+        owner: luis
+        group: luis
+        mode: '0744'
+    - name: copy kube-config to luis .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/luis/.kube/config
+        remote_src: yes
+        owner: luis
+        group: luis
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/luis/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+- name: Configure kube-config for 'ansible' user
+  hosts: members
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/ansible/.kube/
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0744'
+    - name: copy kube-config to ansible .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ansible/.kube/config
+        remote_src: yes
+        owner: ansible
+        group: ansible
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/ansible/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+
+- name: Configure kube-config for 'root' user
+  hosts: all
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /root/.kube/
+        state: directory
+        owner: root
+        group: root
+        mode: '0744'
+    - name: copy kube-config to root .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /root/.kube/config
+        remote_src: yes
+        owner: root
+        group: root
+    - name: update .bashrc
+      blockinfile:
+        dest: /root/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"

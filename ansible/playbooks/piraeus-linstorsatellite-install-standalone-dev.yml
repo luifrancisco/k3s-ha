@@ -1,0 +1,81 @@
+---
+- name: install linstor-sattelite-configuration
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install linstor sattelite configuration
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: piraeus.io/v1
+        kind: LinstorSatelliteConfiguration
+        metadata:
+          name: storage-pool
+        spec:
+          storagePools:
+            - name: pool1
+              fileThinPool:
+                directory: /var/lib/piraeus-datastore/pool1
+        EOF
+      register: linstorsatelliteconfiguration_install_logs
+    - name: print linstorsatelliteconfiguration_install_logs
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stdout_lines }}"
+    - name: print linstorsatelliteconfiguration_install_logs errors
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stderr_lines }}"
+
+# Checks
+- name: check linstor storage pool list
+  hosts: main 
+  become: true 
+  tasks:
+    - name: execute linstor node list for FILE THIN
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color storage-pool list  | grep FILE_THIN  | awk '{print  $18}' | uniq
+      register: linstor_storage_pool_list_logs
+      until: linstor_storage_pool_list_logs.stdout_lines == ["Ok"]
+      retries: 10
+      delay: 10
+    - name: print linstor_storage_pool_list_logs
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stdout_lines }}"
+    - name: print linstor_storage_pool_list_logs errors
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stderr_lines }}"
+
+    - name: execute linstor node list for DISKLESS
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color storage-pool list  | grep DISKLESS  | awk '{print  $13}' | uniq
+      register: linstor_storage_pool_list_logs
+      until: linstor_storage_pool_list_logs.stdout_lines == ["Ok"]
+      retries: 10
+      delay: 10
+    - name: print linstor_storage_pool_list_logs
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stdout_lines }}"
+    - name: print linstor_storage_pool_list_logs errors
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stderr_lines }}"
+
+# Create Storage class
+- name: Create piraeus storage class
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install linstor sattelite configuration
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: piraeus-storage
+        provisioner: linstor.csi.linbit.com
+        allowVolumeExpansion: true
+        volumeBindingMode: WaitForFirstConsumer
+        parameters:
+          linstor.csi.linbit.com/storagePool: pool1
+        EOF
+    - name: print linstorsatelliteconfiguration_install_logs
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stdout_lines }}"
+    - name: print linstorsatelliteconfiguration_install_logs errors
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stderr_lines }}"

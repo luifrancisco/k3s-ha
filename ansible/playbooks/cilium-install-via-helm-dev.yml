@@ -20,6 +20,7 @@
         name: cilium
         chart_ref: cilium/cilium
         release_namespace: kube-system
+        # release_namespace: cilium-system
         values:
           replicas: 1
         update_repo_cache: true
@@ -62,6 +63,6 @@
     - name: Check pod status every 10 seconds
       shell: kubectl get pod -n kube-system -o json
       register: kgp_status
-      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Pending"]
       retries: 10
       delay: 10

@@ -1,0 +1,82 @@
+---
+- name: update and install pre-requisite packages
+  hosts: main
+  become: true
+  tasks:
+    - name: update cache
+      apt:
+        update_cache: yes
+    - name: install linux header
+      apt:
+        name: linux-headers-{{ ansible_facts.kernel }}
+      register: apt_install_logs
+    - name: install linux-headers-virtual
+      apt:
+        name: linux-headers-virtual
+
+- name: install piraeus operator
+  hosts: main
+  become: true
+  tasks: 
+    - name: install piraeus operator
+      shell: kubectl apply --server-side -k "https://github.com/piraeusdatastore/piraeus-operator//config/default?ref=v2"
+    - name: wait for piraeus-operator to be in ready state - check pod status every 10 seconds
+      shell: kubectl -n piraeus-datastore get pod -o json
+      register: kgp_status
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      retries: 10
+      delay: 15
+
+
+- name: install piraeus-datastore
+  hosts: main 
+  become: true 
+  tasks:
+    - name: apply linstorcluster yaml
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: piraeus.io/v1
+        kind: LinstorCluster
+        metadata:
+          name: linstorcluster
+        spec: {}
+        EOF
+      register: linstorcluster_install_main_logs
+    - name: print linstorcluster_install_main_logs
+      debug: 
+        msg: "{{ linstorcluster_install_main_logs.stdout_lines }}"
+    - name: print linstorcluster_install_main_logs errors
+      debug: 
+        msg: "{{ linstorcluster_install_main_logs.stderr_lines }}"
+    - name: wait for piraeus-datastore workloads to be in ready state - check pod status every 30 seconds
+      shell: kubectl -n piraeus-datastore get pod -o json
+      register: kgp_status
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      retries: 10
+      delay: 30
+    - name: execute linstor node list
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color node list | grep k8s | awk '{print  $9}' | uniq
+      register: linstor_node_list_logs
+      until: linstor_node_list_logs.stdout_lines == ["Online"]
+      retries: 10
+      delay: 10
+- name: install linstor-sattelite-configuration
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install linstor sattelite configuration
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: piraeus.io/v1
+        kind: LinstorSatelliteConfiguration
+        metadata:
+          name: storage-pool
+        spec:
+          storagePools:
+            lvmThinPools:
+            - name: lvm-thin
+              thinVolume: thinpool
+              volumeGroup: linstor_thinpool
+              devicePaths:
+              - /dev/sdb
+        EOF

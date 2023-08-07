@@ -1,0 +1,26 @@
+---
+# Create Storage class
+- name: Create piraeus storage class
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install linstor sattelite configuration
+      shell: |
+        kubectl apply -f - <<EOF
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: piraeus-storage
+        provisioner: linstor.csi.linbit.com
+        allowVolumeExpansion: true
+        volumeBindingMode: WaitForFirstConsumer
+        parameters:
+          linstor.csi.linbit.com/storagePool: pool1
+        EOF
+      register: linstorsatelliteconfiguration_install_logs
+    - name: print linstorsatelliteconfiguration_install_logs
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stdout_lines }}"
+    - name: print linstorsatelliteconfiguration_install_logs errors
+      debug: 
+        msg: "{{ linstorsatelliteconfiguration_install_logs.stderr_lines }}"

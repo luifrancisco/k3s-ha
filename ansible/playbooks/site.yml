@@ -26,6 +26,19 @@
         state: latest
         install_recommends: no
 
+    # - name: install python3-pip
+    #   apt:
+    #     name: python3-pip
+    #     state: latest
+    #     install_recommends: no
+
+    # - name: install required packages for ansible core k8s module
+    #   pip:
+    #     name:
+    #       - openshift
+    #       - pyyaml
+    #       - kubernetes 
+
 - name: update  /etc/hosts 
   hosts: all
   become: true
@@ -34,10 +47,13 @@
       lineinfile:
         line: 10.20.0.90 k8s-master-0-dev
         path: /etc/hosts
-        
     - name: update with second vm ip information
       lineinfile:
         line: 10.20.0.91 k8s-master-1-dev
+        path: /etc/hosts
+    - name: update with third vm ip information
+      lineinfile:
+        line: 10.20.0.92 k8s-master-2-dev
         path: /etc/hosts
 
 
@@ -82,3 +98,10 @@
 #       script: /some/local/create_file.sh --some-argument 1234
 #       args:
 #         creates: /var/lib/rancher
+
+# - name: reboot VMs
+#   hosts: all
+#   become: true
+#   tasks:      
+#     - name: reboot all VMs
+#       reboot:

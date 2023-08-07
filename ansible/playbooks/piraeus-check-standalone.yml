@@ -1,0 +1,23 @@
+---
+- name: check linstor node list
+  hosts: main 
+  become: true 
+  tasks:
+    - name: execute linstor node list
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color node list | grep k8s | awk '{print  $9}' | uniq
+      register: linstor_node_list_logs
+      until: linstor_node_list_logs.stdout_lines == ["Online"]
+      retries: 10
+      delay: 10
+    - name: print linstor_node_list_logs
+      debug: 
+        msg: "{{ linstor_node_list_logs.stdout_lines }}"
+    - name: print linstor_node_list_logs errors
+      debug: 
+        msg: "{{ linstor_node_list_logs.stderr_lines }}"
+    # - name: wait for piraeus-datastore workloads to be in ready state - check pod status every 30 seconds
+    #   shell: kubectl -n piraeus-datastore get pod -o json
+    #   register: kgp_status
+    #   until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+    #   retries: 10
+    #   delay: 30

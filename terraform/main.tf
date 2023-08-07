@@ -41,7 +41,7 @@ resource "proxmox_vm_qemu" "k8s-master-0-dev" {
   onboot = true
   tablet = false
   agent = 1
-  memory = 8192
+  memory = 4096
   sockets = 1
   cores = 4
   scsihw = "virtio-scsi-single"
@@ -75,7 +75,7 @@ resource "proxmox_vm_qemu" "k8s-master-1-dev" {
   onboot = true
   tablet = false
   agent = 0
-  memory = 8192
+  memory = 4096
   sockets = 1
   cores = 4
   scsihw = "virtio-scsi-single"
@@ -83,6 +83,38 @@ resource "proxmox_vm_qemu" "k8s-master-1-dev" {
   cipassword = var.cipassword
   sshkeys = var.sshkeys
   ipconfig0 = "gw=10.20.0.1,ip=10.20.0.91/24"
+
+  disk {
+    type = "scsi"
+    storage = "local-lvm"
+	  size = "10G"
+	  iothread = 1
+  }
+
+  network {
+    model = "virtio"
+    bridge = "vmbr0"
+    firewall = false
+  }
+}
+
+
+resource "proxmox_vm_qemu" "k8s-master-2-dev" {
+  name        = "k8s-master-2-dev"
+  target_node = "pve-dev"
+  clone = "ubuntu-22-04-template"
+  vmid = 1802
+  onboot = true
+  tablet = false
+  agent = 0
+  memory = 4096
+  sockets = 1
+  cores = 4
+  scsihw = "virtio-scsi-single"
+  ciuser = var.ciuser
+  cipassword = var.cipassword
+  sshkeys = var.sshkeys
+  ipconfig0 = "gw=10.20.0.1,ip=10.20.0.92/24"
 
   disk {
     type = "scsi"

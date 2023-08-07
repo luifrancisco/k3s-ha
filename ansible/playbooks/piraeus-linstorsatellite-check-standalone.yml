@@ -1,0 +1,36 @@
+---
+- name: check linstor storage pool list
+  hosts: main 
+  become: true 
+  tasks:
+    - name: execute linstor node list for FILE THIN
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color storage-pool list  | grep FILE_THIN  | awk '{print  $18}' | uniq
+      register: linstor_storage_pool_list_logs
+      until: linstor_storage_pool_list_logs.stdout_lines == ["Ok"]
+      retries: 10
+      delay: 10
+    - name: print linstor_storage_pool_list_logs
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stdout_lines }}"
+    - name: print linstor_storage_pool_list_logs errors
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stderr_lines }}"
+
+    - name: execute linstor node list for DISKLESS
+      shell: kubectl -n piraeus-datastore exec deploy/linstor-controller -- linstor --no-color storage-pool list  | grep DISKLESS  | awk '{print  $13}' | uniq
+      register: linstor_storage_pool_list_logs
+      until: linstor_storage_pool_list_logs.stdout_lines == ["Ok"]
+      retries: 10
+      delay: 10
+    - name: print linstor_storage_pool_list_logs
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stdout_lines }}"
+    - name: print linstor_storage_pool_list_logs errors
+      debug: 
+        msg: "{{ linstor_storage_pool_list_logs.stderr_lines }}"
+    # - name: wait for piraeus-datastore workloads to be in ready state - check pod status every 30 seconds
+    #   shell: kubectl -n piraeus-datastore get pod -o json
+    #   register: kgp_status
+    #   until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+    #   retries: 10
+    #   delay: 30
