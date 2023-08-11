@@ -8,4 +8,4 @@ The terraform script by default will 3 VMs with two disks attached.
 
 How to use:
 1. Download the repository
-git clone 
+`git clone https://github.com/luifrancisco/k3s-ha`
