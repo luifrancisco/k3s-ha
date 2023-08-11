@@ -6,6 +6,9 @@ cd ~/images
 rm -f ~/images/jammy-server-cloudimg-amd64.img
 wget https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
 
+#install libguestfs-tools for vity-customize
+apt-get install -y libguestfs-tools
+
 #install qemu-guest-agent
 virt-customize -a jammy-server-cloudimg-amd64.img --install qemu-guest-agent
 
