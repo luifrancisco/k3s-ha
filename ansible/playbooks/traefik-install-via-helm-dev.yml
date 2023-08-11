@@ -21,7 +21,7 @@
         chart_ref: cilium/cilium
         release_namespace: kube-system
         values:
-          replicas: 1
+          replicas: 3
       register: cilium_install_main_logs
     - name: print cilium_install_main_logs output
       debug: 
