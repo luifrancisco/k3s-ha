@@ -1,0 +1,283 @@
+---
+# - name: install k3s server - main
+#   hosts: main
+#   become: true
+#   tasks:
+#     - name: install k3s server init on main
+#       script: scripts/k3s-server-init.sh 
+#       args:
+#         creates: /var/lib/rancher
+
+- name: install k3s server - main  
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install k3s server join on main 
+      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --cluster-init --flannel-backend none --disable-network-policy --cluster-cidr=10.40.0.0/16 --disable=traefik --tls-san=10.20.0.99
+      register: main_init_logs
+    - name: print main_init_logs output
+      debug: 
+        msg: "{{ main_init_logs.stdout_lines }}"
+    - name: print main_init_logs errors
+      debug: 
+        msg: "{{ main_init_logs.stderr_lines }}"
+    - name: Check k3s service status
+      systemd:
+        name: k3s
+      register: k3s_service_status
+    - name: print k3s service status
+      debug: 
+        msg: "{{ k3s_service_status.status.ActiveState }}"
+# Prepare kube-vip yaml files
+- name: Prepare kube-vip yaml files on main
+  hosts: main 
+  become: true 
+  tasks:
+    - name: download rbac yaml
+      shell: curl https://kube-vip.io/manifests/rbac.yaml > /var/lib/rancher/k3s/server/manifests/kube-vip-rbac.yaml
+    - name: generate kube-vip-ds yaml
+      shell: |
+        export VIP=
+        export INTERFACE=eth0
+        KVVERSION=$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")
+        alias kube-vip="ctr image pull ghcr.io/kube-vip/kube-vip:$KVVERSION; ctr run --rm --net-host ghcr.io/kube-vip/kube-vip:$KVVERSION vip /kube-vip"
+        kube-vip manifest daemonset \
+            --interface {{ _interface }} \
+            --address {{ _vip }} \
+            --inCluster \
+            --taint \
+            --controlplane \
+            --services \
+            --arp \
+            --leaderElection > /var/lib/rancher/k3s/server/manifests/kube-vip-ds.yaml
+      register: kubevip_yaml_logs
+    - name: print kubevip_yaml_logs output
+      debug: 
+        msg: "{{ kubevip_yaml_logs.stdout_lines }}"
+    - name: print kubevip_yaml_logs errors
+      debug: 
+        msg: "{{ kubevip_yaml_logs.stderr_lines }}"
+    - name: download rbac yaml
+      shell: curl https://kube-vip.io/manifests/rbac.yaml > /var/lib/rancher/k3s/server/manifests/kube-vip-rbac.yaml
+# Configure users
+- name: Configure kube-config for 'luis' user
+  hosts: main
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/luis/.kube/
+        state: directory
+        owner: luis
+        group: luis
+        mode: '0744'
+    - name: copy kube-config to luis .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/luis/.kube/config
+        remote_src: yes
+        owner: luis
+        group: luis
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/luis/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+- name: Configure kube-config for 'ansible' user
+  hosts: main
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/ansible/.kube/
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0744'
+    - name: copy kube-config to ansible .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ansible/.kube/config
+        remote_src: yes
+        owner: ansible
+        group: ansible
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/ansible/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+
+- name: Configure kube-config for 'root' user
+  hosts: main
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /root/.kube/
+        state: directory
+        owner: root
+        group: root
+        mode: '0744'
+    - name: copy kube-config to root .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /root/.kube/config
+        remote_src: yes
+        owner: root
+        group: root
+    - name: update .bashrc
+      blockinfile:
+        dest: /root/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+# Helm installation
+- name: install helm on main
+  hosts: main 
+  become: true 
+  tasks:
+    - name: install helm cli using script
+      shell: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+      register: helm_install_main_logs
+    - name: print helm_install_main_logs
+      debug: 
+        msg: "{{ helm_install_main_logs.stdout_lines }}"
+    - name: print helm_install_main_logs errors
+      debug: 
+        msg: "{{ helm_install_main_logs.stderr_lines }}"
+- name: Query helm version
+  hosts: main
+  become: true
+  tasks:
+    - name: Query helm version
+      shell: helm version
+      register: helm_version
+    - name: Print helm version
+      debug:
+        msg: "{{ helm_version.stdout }}"
+# Cilium installation via helm start
+- name: install cilium on main
+  hosts: main 
+  become: true 
+  tasks:
+    - name: Add cilium chart repo
+      kubernetes.core.helm_repository:
+        name: cilium
+        repo_url: "https://helm.cilium.io/"
+    - name: install cilium cli and cilium
+      kubernetes.core.helm: 
+        name: cilium
+        chart_ref: cilium/cilium
+        release_namespace: kube-system
+        values:
+          replicas: 3
+        update_repo_cache: true
+        set_values:
+          - value: bgpControlPlane.enabled=true
+          - value: ipam.operator.clusterPoolIPv4PodCIDRList="10.40.0.0/16"
+      register: cilium_install_main_logs
+    - name: print cilium_install_main_logs output
+      debug: 
+        msg: "{{ cilium_install_main_logs.stdout_lines }}"
+    - name: print cilium_install_main_logs errors
+      debug: 
+        msg: "{{ cilium_install_main_logs.stderr_lines }}"
+- name: Wait until pods are in 'running' or 'completed' state
+  hosts: main
+  become: true
+  tasks:
+    - name: Check pod status every 10 seconds
+      shell: kubectl get pod -n kube-system -o json
+      register: kgp_status
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Pending"]
+      retries: 10
+      delay: 10
+# K3s join members
+- name: install k3s server - member  
+  hosts: members 
+  serial: 1
+  become: true 
+  tasks:
+    - name: install k3s server join on member 
+      shell: curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server --server https://k8s-master-0-dev:6443 --flannel-backend none --disable-network-policy --cluster-cidr=10.40.0.0/16 --disable=traefik --tls-san=10.20.0.99
+      register: member_join_status
+    - name: print member_join_status output
+      debug: 
+        msg: "{{ member_join_status.stdout_lines }}"
+    - name: print member_join_status errors
+      debug: 
+        msg: "{{ member_join_status.stderr_lines }}"
+    - name: Check k3s service status
+      systemd:
+        name: k3s
+      register: k3s_service_status
+    - name: print k3s service status
+      debug: 
+        msg: "{{ k3s_service_status.status.ActiveState }}"
+
+- name: Configure kube-config for 'luis' user
+  hosts: members
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/luis/.kube/
+        state: directory
+        owner: luis
+        group: luis
+        mode: '0744'
+    - name: copy kube-config to luis .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/luis/.kube/config
+        remote_src: yes
+        owner: luis
+        group: luis
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/luis/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+- name: Configure kube-config for 'ansible' user
+  hosts: members
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /home/ansible/.kube/
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0744'
+    - name: copy kube-config to ansible .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ansible/.kube/config
+        remote_src: yes
+        owner: ansible
+        group: ansible
+    - name: update .bashrc
+      blockinfile:
+        dest: /home/ansible/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
+
+- name: Configure kube-config for 'root' user
+  hosts: all
+  become: true
+  tasks:
+    - name: Create .kube directory if it does not exist
+      file:
+        path: /root/.kube/
+        state: directory
+        owner: root
+        group: root
+        mode: '0744'
+    - name: copy kube-config to root .kube directory
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /root/.kube/config
+        remote_src: yes
+        owner: root
+        group: root
+    - name: update .bashrc
+      blockinfile:
+        dest: /root/.bashrc
+        content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"

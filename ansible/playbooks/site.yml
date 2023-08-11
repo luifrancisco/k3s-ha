@@ -26,6 +26,12 @@
         state: latest
         install_recommends: no
 
+    - name: install jq
+      apt:
+        name: jq
+        state: latest
+        install_recommends: no
+
     # - name: install python3-pip
     #   apt:
     #     name: python3-pip
@@ -38,6 +44,7 @@
     #       - openshift
     #       - pyyaml
     #       - kubernetes 
+
 
 - name: update  /etc/hosts 
   hosts: all
@@ -55,8 +62,20 @@
       lineinfile:
         line: 10.20.0.92 k8s-master-2-dev
         path: /etc/hosts
-
-
+# - name: disable systemd-resolved
+#   hosts: all
+#   become: true
+#   tasks:   
+#     - name: Enable service systemd-resolved and ensure it is unmasked
+#       ansible.builtin.systemd:
+#         name: systemd-resolved
+#         enabled: true
+#         masked: no
+    - name: Comment out the line update_etc_hosts in /etc/cloud/cloud.cfg
+      replace:
+        path: /etc/cloud/cloud.cfg
+        regexp: ' - update_etc_hosts'
+        replace: '# - update_etc_hosts'
 - name: Create 'luis' user and group.
   hosts: all
   become: true
@@ -99,9 +118,26 @@
 #       args:
 #         creates: /var/lib/rancher
 
-# - name: reboot VMs
+- name: reboot VMs
+  hosts: all
+  become: true
+  tasks:      
+    - name: reboot all VMs
+      reboot:
+
+# - name: update  /etc/hosts 
 #   hosts: all
 #   become: true
 #   tasks:      
-#     - name: reboot all VMs
-#       reboot:
+#     - name: update with first vm ip information
+#       lineinfile:
+#         line: 10.20.0.90 k8s-master-0-dev
+#         path: /etc/hosts
+#     - name: update with second vm ip information
+#       lineinfile:
+#         line: 10.20.0.91 k8s-master-1-dev
+#         path: /etc/hosts
+#     - name: update with third vm ip information
+#       lineinfile:
+#         line: 10.20.0.92 k8s-master-2-dev
+#         path: /etc/hosts

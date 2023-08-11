@@ -21,20 +21,15 @@
         chart_ref: cilium/cilium
         release_namespace: kube-system
         # release_namespace: cilium-system
-        values:
-          replicas: 3
-        update_repo_cache: true
-        set_values:
-          # - value: enable_bgp_control_plane=true
-          - value: bgpControlPlane.enabled=true
-          - value: ipam.operator.clusterPoolIPv4PodCIDRList="10.40.0.0/16"
-      register: cilium_install_main_logs
-    - name: print cilium_install_main_logs output
+        state: absent
+        wait: true
+      register: cilium_uninstall_main_logs
+    - name: print cilium_uninstall_main_logs output
       debug: 
-        msg: "{{ cilium_install_main_logs.stdout_lines }}"
-    - name: print cilium_install_main_logs errors
+        msg: "{{ cilium_uninstall_main_logs.stdout_lines }}"
+    - name: print cilium_uninstall_main_logs errors
       debug: 
-        msg: "{{ cilium_install_main_logs.stderr_lines }}"
+        msg: "{{ cilium_uninstall_main_logs.stderr_lines }}"
 
 # - name: install cilium-cli on members
 #   hosts: members
@@ -56,14 +51,3 @@
 #     - name: print cilium_install_member_logs
 #       debug: 
 #         msg: "{{ cilium_install_member_logs }}"
-
-- name: Wait until pods are in 'running' or 'completed' state
-  hosts: main
-  become: true
-  tasks:
-    - name: Check pod status every 10 seconds
-      shell: kubectl get pod -n kube-system -o json
-      register: kgp_status
-      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Pending"]
-      retries: 10
-      delay: 10
