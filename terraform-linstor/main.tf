@@ -14,6 +14,31 @@ provider "proxmox" {
   pm_api_token_secret = var.pm_api_token_secret
 }
 
+## Use aliases to provision on different pve nodes
+# provider "proxmox" {
+#   # Configuration options
+#   alias = "pve0"
+#   pm_api_url = "https://10.0.0.10:8006/api2/json/"
+#   pm_api_token_id = var.pm_api_token_id
+#   pm_api_token_secret = var.pm_api_token_secret
+# }
+
+# provider "proxmox" {
+#   # Configuration options
+#   alias = "pve1"
+#   pm_api_url = "https://10.0.0.11:8006/api2/json/"
+#   pm_api_token_id = var.pm_api_token_id
+#   pm_api_token_secret = var.pm_api_token_secret
+# }
+
+# provider "proxmox" {
+#   # Configuration options
+#   alias = "pve2"
+#   pm_api_url = "https://10.0.0.12:8006/api2/json/"
+#   pm_api_token_id = var.pm_api_token_id
+#   pm_api_token_secret = var.pm_api_token_secret
+# }
+
 variable "ciuser" {
     type = string
 }

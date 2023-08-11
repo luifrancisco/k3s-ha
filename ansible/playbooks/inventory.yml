@@ -1,0 +1,17 @@
+all:
+  hosts:
+  children:
+    main:
+      hosts:
+        10.20.0.90:
+    members:
+      hosts:
+        10.20.0.91:
+        10.20.0.92:
+  vars:
+    ansible_user: ansible
+    _vip: 10.20.0.99
+    _interface: eth0
+    _clustercidr: 10.40.0.0/16
+    _podcidr: 10.50.0.0/16
+    _longhornversion: 1.5.1

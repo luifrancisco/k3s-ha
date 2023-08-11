@@ -26,11 +26,36 @@
         state: latest
         install_recommends: no
 
-    - name: install jq
+    - name: install jq open-iscsi nfs-common
       apt:
+        pkg:
+          - jq
+          - open-iscsi
+          - nfs-common
         name: jq
         state: latest
         install_recommends: no
+
+- name: start iscsid service
+  hosts: all
+  become: yes
+  systemd:
+    name: iscsid
+    enabled: yes
+    state: started
+
+    # - name: install open-iscsi
+    #   apt:
+    #     name: open-iscsi
+    #     state: latest
+    #     install_recommends: no
+
+    # - name: install nfs-common
+    #   apt:
+    #     name: nfs-common
+    #     state: latest
+    #     install_recommends: no
+
 
     # - name: install python3-pip
     #   apt:
