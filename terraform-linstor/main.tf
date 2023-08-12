@@ -14,14 +14,14 @@ provider "proxmox" {
   pm_api_token_secret = var.pm_api_token_secret
 }
 
-## Use aliases to provision on different pve nodes
-# provider "proxmox" {
-#   # Configuration options
-#   alias = "pve0"
-#   pm_api_url = "https://10.0.0.10:8006/api2/json/"
-#   pm_api_token_id = var.pm_api_token_id
-#   pm_api_token_secret = var.pm_api_token_secret
-# }
+# Use aliases to provision on different pve nodes
+provider "proxmox" {
+  # Configuration options
+  alias = "pve-dev"
+  pm_api_url = "https://10.20.0.4:8006/api2/json/"
+  pm_api_token_id = var.pm_api_token_id
+  pm_api_token_secret = var.pm_api_token_secret
+}
 
 # provider "proxmox" {
 #   # Configuration options
@@ -60,6 +60,8 @@ variable "sshkeys" {
 
 resource "proxmox_vm_qemu" "k8s-master-0-dev" {
   name        = "k8s-master-0-dev"
+# Mentioning provider below to avoid missing this out during clusterized proxmox deployment 
+  provider = proxmox.pve-dev 
   target_node = "pve-dev"
   clone = "ubuntu-22-04-template"
   vmid = 1800
@@ -103,6 +105,8 @@ resource "proxmox_vm_qemu" "k8s-master-0-dev" {
 # Commenting below to test cicustom
 resource "proxmox_vm_qemu" "k8s-master-1-dev" {
   name        = "k8s-master-1-dev"
+# Mentioning provider below to avoid missing this out during clusterized proxmox deployment 
+  provider = proxmox.pve-dev 
   target_node = "pve-dev"
   clone = "ubuntu-22-04-template"
   vmid = 1801
@@ -144,6 +148,8 @@ resource "proxmox_vm_qemu" "k8s-master-1-dev" {
 
 resource "proxmox_vm_qemu" "k8s-master-2-dev" {
   name        = "k8s-master-2-dev"
+# Mentioning provider below to avoid missing this out during clusterized proxmox deployment 
+  provider = proxmox.pve-dev 
   target_node = "pve-dev"
   clone = "ubuntu-22-04-template"
   vmid = 1802
