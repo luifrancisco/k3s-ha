@@ -1,0 +1,57 @@
+---
+# Install Longhorn
+- name: Create thin volume
+  hosts: all 
+  become: true 
+  tasks:
+    - name: Create a new primary partition for LVM
+      community.general.parted:
+        device: /dev/sdb
+        number: 1
+        flags: [ lvm ]
+        state: present
+
+    - name: Create a volume group on top of /dev/sdb with default PE size
+      community.general.lvg:
+        vg: longhorn_vg
+        pvs: /dev/sdb1
+
+
+  
+    - name: Create a logical volume for /dev/sdb
+      community.general.lvol:
+        vg: longhorn_vg
+        lv: longhorn_lv
+        size: 100%FREE
+        # pvs: /dev/sdb1
+        # thinpool: longhorn-thin
+
+    - name: Format the volume with ext4 fs
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/longhorn_vg/longhorn_lv
+
+
+    - name: Target directory under /
+      ansible.builtin.file:
+        path: /longhorn_vol/
+        state: directory
+        mode: '0755'
+
+    - name: mount the lv on /data1
+      ansible.posix.mount:
+        path: /longhorn_vol/
+        src: /dev/longhorn_vg/longhorn_lv
+        fstype: ext4
+        state: mounted
+
+    # - name: Create a logical volume for /dev/sdb
+    #   community.general.lvol:
+    #     vg: longhorn_vg
+    #     size: 100%FREE
+    #     thinpool: longhorn-thin
+
+    # - name: Format the volume with ext4 fs
+    #   community.general.filesystem:
+    #     fstype: ext4
+    #     dev: /dev/sdb

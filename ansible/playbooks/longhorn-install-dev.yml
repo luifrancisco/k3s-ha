@@ -17,8 +17,10 @@
         # values:
         #   version: {{ _longhornversion }}
         update_repo_cache: true
-        # set_values:
-        #   - value: version={{ _longhornversion }}
+        set_values:
+          - value: service.ui.type=LoadBalancer
+          - value: defaultSettings.defaultDataPath=/longhorn_vol
+          - value: defaultSettings.defaultReplicaCount=3
       register: longhorn_install_main_logs
     - name: print longhorn_install_main_logs output
       debug: 

@@ -1,0 +1,38 @@
+---
+# Install Longhorn
+- name: Create thin volume
+  hosts: members 
+  become: true 
+  tasks:
+    - name: Create a new primary partition for LVM
+      community.general.parted:
+        device: /dev/sdb
+        number: 1
+        fs_type: ext4
+        state: present
+
+    - name: Create a volume group on top of /dev/sdb with default PE size
+      community.general.lvg:
+        vg: longhorn_vg
+        pvs: /dev/sdb
+
+
+  
+    # - name: Create a logical volume for /dev/sdb
+    #   community.general.lvol:
+    #     vg: longhorn_vg
+    #     lv: longhorn_lv
+    #     size: 100%FREE
+    #     # pvs: /dev/sdb1
+    #     # thinpool: longhorn-thin
+
+    # - name: Create a logical volume for /dev/sdb
+    #   community.general.lvol:
+    #     vg: longhorn_vg
+    #     size: 100%FREE
+    #     thinpool: longhorn-thin
+
+    - name: Format the volume with ext4 fs
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/sdb

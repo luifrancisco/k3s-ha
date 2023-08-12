@@ -86,7 +86,7 @@ resource "proxmox_vm_qemu" "k8s-master-0-dev" {
  disk {
    type = "scsi"
    storage = "local-lvm"
-   size = "5G"
+   size = "20G"
    iothread = 1
    ssd = 1
  }
@@ -129,7 +129,7 @@ resource "proxmox_vm_qemu" "k8s-master-1-dev" {
  disk {
    type = "scsi"
    storage = "local-lvm"
-   size = "5G"
+   size = "20G"
    iothread = 1
    ssd = 1
  }
@@ -170,7 +170,7 @@ resource "proxmox_vm_qemu" "k8s-master-2-dev" {
  disk {
    type = "scsi"
    storage = "local-lvm"
-   size = "5G"
+   size = "20G"
    iothread = 1
    ssd = 1
  }

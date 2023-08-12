@@ -38,11 +38,13 @@
 
 - name: start iscsid service
   hosts: all
-  become: yes
-  systemd:
-    name: iscsid
-    enabled: yes
-    state: started
+  become: true
+  tasks:
+    - name: start iscsid service
+      service:
+        name: iscsid
+        enabled: yes
+        state: started
 
     # - name: install open-iscsi
     #   apt:
