@@ -1,6 +1,6 @@
 # k3s-ha
 
-Welcome to my first major homelab project. This repository contains all terraform and ansible scripts that will help you spin up your own kubernetes cluster with HA in place.
+Welcome to my first homelab project. This repository contains all terraform and ansible scripts that will help you spin up your own kubernetes cluster with HA in place.
 
 Terraform will be used to instantiate the VMs on Proxmox and Ansible to configure the cluster from scratch.
 
