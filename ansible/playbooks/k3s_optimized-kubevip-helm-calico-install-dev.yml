@@ -168,33 +168,54 @@
     - name: Print helm version
       debug:
         msg: "{{ helm_version.stdout }}"
-# Cilium installation via helm start
-- name: install cilium on main
+# calico installation via helm start
+# - name: Install calico on main
+#   hosts: main 
+#   become: true 
+#   tasks:
+#     - name: install calico operator and CRD
+#       shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/{{ _calicoversion }}/manifests/tigera-operator.yaml
+#       register: calico_operator_install_logs
+#     - name: Print calico_operator_install errors
+#       debug:
+#         msg: "{{ calico_operator_install.stderr_lines }}"
+#     - name: install calico custom resources
+#       shell: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml
+#       register: calico_resources_install_logs
+#     - name: Print calico_resources_install errors
+#       debug:
+#         msg: "{{ calico_resources_install.stderr_lines }}"
+
+
+
+
+- name: install calico on main
   hosts: main 
   become: true 
   tasks:
-    - name: Add cilium chart repo
+    - name: Add calico chart repo
       kubernetes.core.helm_repository:
-        name: cilium
-        repo_url: "https://helm.cilium.io/"
-    - name: install cilium cli and cilium
+        name: projectcalico
+        repo_url: "https://docs.tigera.io/calico/charts"
+    - name: install calico cli and calico
       kubernetes.core.helm: 
-        name: cilium
-        chart_ref: cilium/cilium
-        release_namespace: kube-system
-        values:
-          replicas: 3
+        name: calico
+        chart_ref: projectcalico/tigera-operator
+        release_namespace: tigera-operator
+        create_namespace: true
+        # values:
+        #   replicas: 3
         update_repo_cache: true
-        set_values:
-          - value: bgpControlPlane.enabled=true
-          - value: ipam.operator.clusterPoolIPv4PodCIDRList="{{ _podcidr }}"
-      register: cilium_install_main_logs
-    - name: print cilium_install_main_logs output
+        # set_values:
+        #   - value: bgpControlPlane.enabled=true
+        #   - value: ipam.operator.clusterPoolIPv4PodCIDRList="{{ _podcidr }}"
+      register: calico_install_main_logs
+    - name: print calico_install_main_logs output
       debug: 
-        msg: "{{ cilium_install_main_logs.stdout_lines }}"
-    - name: print cilium_install_main_logs errors
+        msg: "{{ calico_install_main_logs.stdout_lines }}"
+    - name: print calico_install_main_logs errors
       debug: 
-        msg: "{{ cilium_install_main_logs.stderr_lines }}"
+        msg: "{{ calico_install_main_logs.stderr_lines }}"
 - name: Wait until pods are in 'running' or 'completed' state
   hosts: main
   become: true
@@ -202,9 +223,13 @@
     - name: Check pod status every 10 seconds
       shell: kubectl get pod -n kube-system -o json
       register: kgp_status
-      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Pending"]
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
       retries: 10
       delay: 10
+
+
+
+      
 # K3s join members
 #         --kube-controller-manager-arg "pod-eviction-timeout=20s" \
 - name: install k3s server - member  

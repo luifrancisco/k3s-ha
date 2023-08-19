@@ -1,0 +1,133 @@
+
+
+# Use letsencrypt to generate ssl serficiates
+certificateResolvers:
+  letsencrypt:
+    acme:
+      email: suroot.mail@gmail.com
+      storage: /traefikvol/acme.json #this needs to be in a PV
+      dnsChallenge:
+        provider: cloudflare
+        # Used to make sure the dns challenge is propagated to the rights dns servers
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+
+env:
+  - name: CF_API_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-credentials
+        key: email
+  - name: CF_API_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-credentials
+        key: apiKey
+# - name: POD_NAME
+#   valueFrom:
+#     fieldRef:
+#       fieldPath: metadata.name
+# - name: POD_NAMESPACE
+#   valueFrom:
+#     fieldRef:
+#       fieldPath: metadata.namespace
+# - name: SOME_VAR
+#   value: some-var-value
+# - name: SOME_VAR_FROM_CONFIG_MAP
+#   valueFrom:
+#     configMapRef:
+#       name: configmap-name
+#       key: config-key
+
+ports:
+  web:
+    # address: ':80'
+    # http:
+    redirectTo: websecure
+
+  websecure:
+    asDefault: true
+    port: 8443
+    expose: true
+    protocol: TCP
+    # appProtocol: https
+    # address: ':443'
+    # http:
+      tls:
+        enabled: true
+        certResolver: letsencrypt
+        domains:
+          - main: su-root.net
+            sans:
+              - '*.su-root.net'
+      middlewares:
+        - 'securityHeaders@file'
+
+
+persistence:
+  enabled: true
+  name: traefikvol
+#  existingClaim: ""
+  # accessMode: ReadWriteOnce
+  size: 128Mi
+  storageClass: "longhorn"
+  # volumeName: ""
+  path: /traefikvol
+  # annotations: {}
+  # -- Only mount a subpath of the Volume into the pod
+  # subPath: ""
+
+service:
+  enabled: true
+  ## -- Single service is using `MixedProtocolLBService` feature gate.
+  ## -- When set to false, it will create two Service, one for TCP and one for UDP.
+  single: true
+  type: LoadBalancer
+  # -- Additional annotations applied to both TCP and UDP services (e.g. for cloud provider specific config)
+  annotations: {}
+    io.cilium/lb-ipam-ips: 192.168.100.2
+  # -- Additional annotations for TCP service only
+  # annotationsTCP: {}
+  # -- Additional annotations for UDP service only
+  # annotationsUDP: {}
+  # -- Additional service labels (e.g. for filtering Service by custom labels)
+  labels: {}
+    exposedExternal: "yes"
+  # -- Additional entries here will be added to the service spec.
+  # -- Cannot contain type, selector or ports entries.
+  # spec: {}
+    # externalTrafficPolicy: Cluster
+    # loadBalancerIP: "1.2.3.4"
+    # clusterIP: "2.3.4.5"
+  # loadBalancerSourceRanges: []
+    # - 192.168.0.1/32
+    # - 172.16.0.0/16
+  ## -- Class of the load balancer implementation
+  # loadBalancerClass: service.k8s.aws/nlb
+  # externalIPs: []
+    # - 1.2.3.4
+  ## One of SingleStack, PreferDualStack, or RequireDualStack.
+  # ipFamilyPolicy: SingleStack
+  ## List of IP families (e.g. IPv4 and/or IPv6).
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services
+  # ipFamilies:
+  #   - IPv4
+  #   - IPv6
+  ##
+  ## -- An additionnal and optional internal Service.
+  ## Same parameters as external Service
+  # internal:
+  #   type: ClusterIP
+  #   # labels: {}
+  #   # annotations: {}
+  #   # spec: {}
+  #   # loadBalancerSourceRanges: []
+  #   # externalIPs: []
+  #   # ipFamilies: [ "IPv4","IPv6" ]
+
+
+logs:
+  general:
+    level: ERROR

@@ -1,0 +1,74 @@
+---
+# calico installation via helm start
+- name: install calico on main
+  hosts: main 
+  become: true 
+  tasks:
+    - name: Add calico chart repo
+      kubernetes.core.helm_repository:
+        name: projectcalico
+        repo_url: "https://docs.tigera.io/calico/charts"
+    - name: install calico cli and calico
+      kubernetes.core.helm: 
+        name: calico
+        chart_ref: projectcalico/tigera-operator
+        chart_version: "{{ _calicoversion }}"
+        release_namespace: tigera-operator
+        create_namespace: true
+        update_repo_cache: true
+        values:
+          installation:
+            controlPlaneReplicas: 3
+            calicoNetwork:
+              bgp: Enabled
+              ipPools:
+                - cidr: "{{ _podcidr0 }}"
+                  nodeSelector: k8s-master-0-dev
+                - cidr: "{{ _podcidr1 }}"
+                  nodeSelector: k8s-master-1-dev
+                - cidr: "{{ _podcidr2 }}"
+                  nodeSelector: k8s-master-2-dev
+      register: calico_install_main_logs
+    - name: print calico_install_main_logs output
+      debug: 
+        msg: "{{ calico_install_main_logs.stdout_lines }}"
+    - name: print calico_install_main_logs errors
+      debug: 
+        msg: "{{ calico_install_main_logs.stderr_lines }}"
+# - name: install calico on main
+#   hosts: main 
+#   become: true 
+#   tasks:
+#     - name: Add calico chart repo
+#       kubernetes.core.helm_repository:
+#         name: projectcalico
+#         repo_url: "https://docs.tigera.io/calico/charts"
+#     - name: install calico cli and calico
+#       kubernetes.core.helm: 
+#         name: calico
+#         chart_ref: projectcalico/tigera-operator
+#         release_namespace: tigera-operator
+#         create_namespace: true
+#         values:
+#           replicas: 3
+#         update_repo_cache: true
+#         # set_values:
+#         #   - value: installation.calicoNetwork.bgp=Enabled
+#         #   - value: installation.calicoNetwork.ipPool..clusterPoolIPv4PodCIDRList="{{ _podcidr }}"
+#       register: calico_install_main_logs
+#     - name: print calico_install_main_logs output
+#       debug: 
+#         msg: "{{ calico_install_main_logs.stdout_lines }}"
+#     - name: print calico_install_main_logs errors
+#       debug: 
+#         msg: "{{ calico_install_main_logs.stderr_lines }}"
+- name: Wait until pods are in 'running' or 'completed' state
+  hosts: main
+  become: true
+  tasks:
+    - name: Check pod status every 10 seconds
+      shell: kubectl get pod -n kube-system -o json
+      register: kgp_status
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      retries: 10
+      delay: 10
