@@ -10,16 +10,18 @@ metadata:
   name: calicoctl
   namespace: kube-system
   labels:
-    run: calicoctl
+    app: calicoctl
 spec:
   replicas: 3
   selector:
     matchLabels:
-      run: calicoctl
+      app: calicoctl
   template:
     metadata:
       name: calicoctl
       namespace: kube-system
+      labels:
+        app: calicoctl
     spec:
       nodeSelector:
         kubernetes.io/os: linux
