@@ -13,6 +13,6 @@ all:
     _vip: 10.20.0.99
     _interface: eth0
     _clustercidr: 10.40.0.0/24
-    _podcidr: 10.41.0.0/22
+    _podcidr: 10.41.0.0/21
     _longhornversion: 1.5.1
     _calicoversion: v3.26.1
