@@ -6,7 +6,7 @@
 #     - name: install cilium on main
 #       script: scripts/cilium-install.sh
 
-
+# Removed from 'cilium install' --set=ipam.operator.clusterPoolIPv4PodCIDR="10.40.0.0/16"
 - name: install cilium on main
   hosts: main 
   become: true 
@@ -22,7 +22,8 @@
         rm cilium-linux-${CLI_ARCH}.tar.gz
         rm cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
         export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-        cilium install --set=ipam.operator.clusterPoolIPv4PodCIDR="10.40.0.0/16"
+        cilium install 
+        
 
       register: cilium_install_main_logs
     - name: print cilium_install_main_logs

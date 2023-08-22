@@ -1,0 +1,30 @@
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: node-0-ippool
+spec:
+  cidr: 10.40.0.0/24
+  ipipMode: Always
+  natOutgoing: true
+  nodeSelector: nodeNumber == "node-0"
+---
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: node-1-ippool
+spec:
+  cidr: 10.40.1.0/24
+  ipipMode: Always
+  natOutgoing: true
+  nodeSelector: nodeNumber == "node-1"
+---
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: node-2-ippool
+spec:
+  cidr: 10.40.2.0/24
+  ipipMode: Always
+  natOutgoing: true
+  nodeSelector: nodeNumber == "node-2"
+

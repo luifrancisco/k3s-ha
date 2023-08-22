@@ -1,28 +1,18 @@
 ---
 # - name: install k3s server - main
-#   hosts: main
-#   become: true
-#   tasks:
-#     - name: install k3s server init on main
-#       script: scripts/k3s-server-init.sh 
-#       args:
-#         creates: /var/lib/rancher
-
-#        --kube-controller-manager-arg "pod-eviction-timeout=20s" \
-
 - name: install k3s server - main  
   hosts: main 
   become: true 
-  tags: set1
   tasks:
     - name: install k3s server join on main 
       shell: |
         curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server \
         --cluster-init \
         --flannel-backend none \
+        --disable=servicelb \
         --disable-network-policy \
-        --cluster-cidr={{ _clustercidr }} \
         --disable=traefik \
+        --disable-kube-proxy \
         --tls-san={{ _vip }} \
         --kubelet-arg "node-status-update-frequency=4s" \
         --kube-controller-manager-arg "node-monitor-period=4s" \
@@ -78,7 +68,6 @@
 - name: Configure kube-config for 'luis' user
   hosts: main
   become: true
-  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -101,7 +90,6 @@
 - name: Configure kube-config for 'ansible' user
   hosts: main
   become: true
-  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -125,7 +113,6 @@
 - name: Configure kube-config for 'root' user
   hosts: main
   become: true
-  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -149,7 +136,6 @@
 - name: install helm on main
   hosts: main 
   become: true 
-  tags: set1
   tasks:
     - name: install helm cli using script
       shell: |
@@ -173,72 +159,40 @@
     - name: Print helm version
       debug:
         msg: "{{ helm_version.stdout }}"
-
-
-
-# calico installation via helm start
-- name: install calico on main
+# Cilium installation via helm start
+- name: Install cilium via helm
   hosts: main 
   become: true 
   tasks:
-    - name: Add calico chart repo
-      kubernetes.core.helm_repository:
-        name: projectcalico
-        repo_url: "https://docs.tigera.io/calico/charts"
-    - name: install calico cli and calico
-      kubernetes.core.helm: 
-        name: calico
-        chart_ref: projectcalico/tigera-operator
-        chart_version: "{{ _calicoversion }}"
-        release_namespace: tigera-operator
-        create_namespace: true
-        update_repo_cache: true
-        values:
-          installation:
-            controlPlaneReplicas: 3
-            calicoNetwork:
-              bgp: Enabled
-              ipPools:
-                - cidr: "{{ _podcidr0 }}"
-                  nodeSelector: k8s-master-0-dev
-                - cidr: "{{ _podcidr1 }}"
-                  nodeSelector: k8s-master-1-dev
-                - cidr: "{{ _podcidr2 }}"
-                  nodeSelector: k8s-master-2-dev
-      register: calico_install_main_logs
-    - name: print calico_install_main_logs output
+    - name: add cilium repo
+      shell: helm repo add cilium https://helm.cilium.io/
+    - name: update cilium repo
+      shell: helm repo update
+    - name: add cilium repo, update, and install
+      shell: |
+        helm install cilium cilium/cilium --version 1.14.1 \
+        --namespace kube-system \
+        --set bgpControlPlane.enabled=true \
+        --set tunnel=disabled \
+        --set ipam.operator.clusterPoolIPv4PodCIDRList=10.42.0.0/16 \
+        --set kubeProxyReplacement=true \
+        --set k8sServiceHost=10.20.0.90 \
+        --set k8sServicePort=6443 \
+        --set ipv4NativeRoutingCIDR=10.42.0.0/16 \
+        --set loadBalancer.mode=dsr \
+        --set autoDirectNodeRoutes=true \
+        --set bgpControlPlane.enabled=native \
+        --set ipv4.enabled=true
+      register: main_init_logs
+    # - name: print main_init_logs output
+    #   debug: 
+    #     msg: "{{ main_init_logs.stdout_lines }}"
+    - name: print main_init_logs errors
       debug: 
-        msg: "{{ calico_install_main_logs.stdout_lines }}"
-    - name: print calico_install_main_logs errors
-      debug: 
-        msg: "{{ calico_install_main_logs.stderr_lines }}"
-# - name: install calico on main
-#   hosts: main 
-#   become: true 
-#   tasks:
-#     - name: Add calico chart repo
-#       kubernetes.core.helm_repository:
-#         name: projectcalico
-#         repo_url: "https://docs.tigera.io/calico/charts"
-#     - name: install calico cli and calico
-#       kubernetes.core.helm: 
-#         name: calico
-#         chart_ref: projectcalico/tigera-operator
-#         release_namespace: tigera-operator
-#         create_namespace: true
-#         values:
-#           replicas: 3
-#         update_repo_cache: true
-#         # set_values:
-#         #   - value: installation.calicoNetwork.bgp=Enabled
-#         #   - value: installation.calicoNetwork.ipPool..clusterPoolIPv4PodCIDRList="{{ _podcidr }}"
-#       register: calico_install_main_logs
-#     - name: print calico_install_main_logs output
-#       debug: 
-#         msg: "{{ calico_install_main_logs.stdout_lines }}"
-#     - name: print calico_install_main_logs errors
-#       debug: 
-#         msg: "{{ calico_install_main_logs.stderr_lines }}"
+        msg: "{{ main_init_logs.stderr_lines }}"
+
+
+
 - name: Wait until pods are in 'running' or 'completed' state
   hosts: main
   become: true
@@ -246,13 +200,10 @@
     - name: Check pod status every 10 seconds
       shell: kubectl get pod -n kube-system -o json
       register: kgp_status
-      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      until: kgp_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running","Pending"]
       retries: 10
       delay: 10
-
-      
 # K3s join members
-#         --kube-controller-manager-arg "pod-eviction-timeout=20s" \
 - name: install k3s server - member  
   hosts: members 
   serial: 1
@@ -263,9 +214,11 @@
         curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server \
         --server https://k8s-master-0-dev:6443 \
         --flannel-backend none \
+        --disable=servicelb \
         --disable-network-policy \
-        --cluster-cidr={{ _clustercidr }} \
-        --disable=traefik --tls-san={{ _vip }} \
+        --disable=traefik \
+        --disable-kube-proxy \
+        --tls-san={{ _vip }} \
         --kubelet-arg "node-status-update-frequency=4s" \
         --kube-controller-manager-arg "node-monitor-period=4s" \
         --kube-controller-manager-arg "node-monitor-grace-period=16s" \
@@ -357,4 +310,3 @@
       blockinfile:
         dest: /root/.bashrc
         content: "# Manually added config\nexport KUBECONFIG=~/.kube/config\nsource <(kubectl completion bash)\nalias k=kubectl"
-

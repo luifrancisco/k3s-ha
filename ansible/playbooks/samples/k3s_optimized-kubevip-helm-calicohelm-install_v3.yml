@@ -30,6 +30,9 @@
         --kube-apiserver-arg "default-not-ready-toleration-seconds=20" \
         --kube-apiserver-arg "default-unreachable-toleration-seconds=20"
       register: main_init_logs
+    - name: print main_init_logs
+      debug: 
+        msg: "{{ main_init_logs }}"
     - name: print main_init_logs output
       debug: 
         msg: "{{ main_init_logs.stdout_lines }}"
@@ -46,7 +49,8 @@
 # Prepare kube-vip yaml files
 - name: Prepare kube-vip yaml files on main
   hosts: main 
-  become: true 
+  become: true
+  tags: set1 
   tasks:
     - name: download rbac yaml
       shell: curl https://kube-vip.io/manifests/rbac.yaml > /var/lib/rancher/k3s/server/manifests/kube-vip-rbac.yaml
@@ -181,6 +185,7 @@
   hosts: members 
   serial: 1
   become: true 
+  tags: set1
   tasks:
     - name: install k3s server join on member 
       shell: |
@@ -217,6 +222,7 @@
 - name: Configure kube-config for 'luis' user
   hosts: members
   become: true
+  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -239,6 +245,7 @@
 - name: Configure kube-config for 'ansible' user
   hosts: members
   become: true
+  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -262,6 +269,7 @@
 - name: Configure kube-config for 'root' user
   hosts: all
   become: true
+  tags: set1
   tasks:
     - name: Create .kube directory if it does not exist
       file:
@@ -287,7 +295,7 @@
 
 
 
-# calico installation via helm start
+# calico installation via helm chart
 - name: install calico on main
   hosts: main 
   become: true 
@@ -309,9 +317,9 @@
             controlPlaneReplicas: 3
             calicoNetwork:
               bgp: Enabled
-              ipPools:
-                - cidr: "{{ _podcidr }}"
-                  blocksize: 24
+              # ipPools:
+              #   - cidr: "{{ _podcidr }}"
+              #     blocksize: 24
                 # - cidr: "{{ _podcidr1 }}"
                 #   nodeSelector: k8s-master-1-dev
                 # - cidr: "{{ _podcidr2 }}"
@@ -391,7 +399,7 @@
   tasks:
     - name: install calicoctl using deployment yaml file
       shell: kubectl apply -f https://raw.githubusercontent.com/luifrancisco/k3s-ha/main/ansible/yaml/calicoctl-deploy.yaml
-      register: calicoctl_install_status
-      until: calicoctl_install_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
-      retries: 10
-      delay: 10
+      # register: calicoctl_install_status
+      # until: calicoctl_install_status.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+      # retries: 10
+      # delay: 10
