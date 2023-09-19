@@ -15,4 +15,5 @@ all:
     _clustercidr: 10.42.0.0/16
     _podcidr: 10.42.0.0/16
     _longhornversion: 1.5.1
-    _calicoversion: v3.26.1
+    _k8sServiceHost: 10.20.0.90
+    _k8sInitialMasterHostname: k8s-master-0-dev

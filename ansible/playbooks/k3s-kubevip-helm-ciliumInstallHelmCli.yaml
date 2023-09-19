@@ -170,19 +170,23 @@
       shell: helm repo update
     - name: add cilium repo, update, and install
       shell: |
-        helm install cilium cilium/cilium --version 1.14.1 \
+        helm install cilium cilium/cilium --version 1.14.2 \
         --namespace kube-system \
         --set bgpControlPlane.enabled=true \
         --set tunnel=disabled \
         --set ipam.operator.clusterPoolIPv4PodCIDRList=10.42.0.0/16 \
         --set kubeProxyReplacement=true \
-        --set k8sServiceHost=10.20.0.90 \
+        --set k8sServiceHost={{ _k8sServiceHost }} \
         --set k8sServicePort=6443 \
+        --set routingMode=native \
+        --set autoDirectNodeRoutes=true \
         --set ipv4NativeRoutingCIDR=10.42.0.0/16 \
         --set loadBalancer.mode=dsr \
-        --set autoDirectNodeRoutes=true \
-        --set bgpControlPlane.enabled=native \
-        --set ipv4.enabled=true
+        --set ipv4.enabled=true \
+        --set prometheus.enabled=true \
+        --set operator.prometheus.enabled=true \
+        --set hubble.enabled=true \
+        --set hubble.metrics.enabled="{dns,drop,tcp,flow,port-distribution,icmp,http}"
       register: main_init_logs
     # - name: print main_init_logs output
     #   debug: 
@@ -212,7 +216,7 @@
     - name: install k3s server join on member 
       shell: |
         curl -sfL https://get.k3s.io | K3S_TOKEN=15700772202 sh -s - server \
-        --server https://k8s-master-0-dev:6443 \
+        --server https://{{ _k8sInitialMasterHostname }}:6443 \
         --flannel-backend none \
         --disable=servicelb \
         --disable-network-policy \
